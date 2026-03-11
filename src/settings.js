@@ -80,8 +80,7 @@ export function createSettingsManager({ onChange } = {}) {
   const trimEndRangeEl = $("#trim-end-range");
   const trimStartDisplayEl = $("#trim-start-display");
   const trimEndDisplayEl = $("#trim-end-display");
-  const trimSelectionSummaryEl = $("#trim-selection-summary");
-  const trimSelectionDetailEl = $("#trim-selection-detail");
+
   const trimJumpBackBtnEl = $("#trim-jump-back-btn");
   const trimJumpForwardBtnEl = $("#trim-jump-forward-btn");
   const formatCardsEl = $("#format-cards");
@@ -663,27 +662,6 @@ export function createSettingsManager({ onChange } = {}) {
   }
 
   function syncTrimSummary(trimState = getTrimState()) {
-    const maxSeconds = maxPreviewSeconds();
-    if (maxSeconds === 0) {
-      trimSelectionSummaryEl.textContent = "プレビューを読み込み中";
-      trimSelectionDetailEl.textContent = "メディアの長さが分かると範囲を表示します";
-      syncTrimActionButtons(trimState);
-      return;
-    }
-
-    const startSeconds = clampPreviewSeconds(trimState.startSeconds ?? 0);
-    const endSeconds = previewEndSeconds(trimState);
-    const clipLength = Math.max(0, endSeconds - startSeconds);
-
-    if (!trimState.hasTrim) {
-      trimSelectionSummaryEl.textContent = "フル尺をそのまま出力";
-      trimSelectionDetailEl.textContent = `00:00:00 から最後まで / 全 ${formatClock(maxSeconds)}`;
-      syncTrimActionButtons(trimState);
-      return;
-    }
-
-    trimSelectionSummaryEl.textContent = `${formatClock(clipLength)} を書き出し`;
-    trimSelectionDetailEl.textContent = `${formatClock(startSeconds)} -> ${trimState.endSeconds === null ? "最後まで" : formatClock(endSeconds)}`;
     syncTrimActionButtons(trimState);
   }
 

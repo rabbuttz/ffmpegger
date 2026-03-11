@@ -1,4 +1,4 @@
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, rmSync } from "node:fs";
 
 const DIST = "dist";
 
@@ -11,18 +11,12 @@ for (const entry of ["app.js", "style.css", "_headers"]) {
 }
 cpSync("src", `${DIST}/src`, { recursive: true });
 
-// Patch /node_modules/ → /vendor/ in index.html and ffmpeg-engine.js
-for (const file of ["index.html", `src/ffmpeg-engine.js`]) {
-  const src = file === "index.html" ? file : `src/ffmpeg-engine.js`;
-  const dest = file === "index.html" ? `${DIST}/index.html` : `${DIST}/src/ffmpeg-engine.js`;
-  const content = readFileSync(src, "utf8").replaceAll("/node_modules/", "/vendor/");
-  writeFileSync(dest, content);
-}
+// Copy index.html as-is (ffmpeg-engine.js already uses /vendor/ paths)
+cpSync("index.html", `${DIST}/index.html`);
 
-// Copy deps to vendor/ instead of node_modules/
+// Copy deps to vendor/ (wasm excluded — loaded from CDN at runtime)
 const deps = [
   ["node_modules/@ffmpeg/ffmpeg/dist/esm", "vendor/@ffmpeg/ffmpeg/dist/esm"],
-  ["node_modules/@ffmpeg/core/dist/esm",   "vendor/@ffmpeg/core/dist/esm"],
   ["node_modules/@ffmpeg/util/dist/esm",   "vendor/@ffmpeg/util/dist/esm"],
   ["node_modules/jszip/dist",              "vendor/jszip/dist"],
 ];

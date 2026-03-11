@@ -933,6 +933,7 @@ export function createSettingsManager({ onChange } = {}) {
 
     trimPreviewEl.classList.remove("hidden");
     trimPreviewFileEl.value = String(item.id);
+    resetTrimInputs();
     syncTrimState();
     loadWaveform(item);
   }

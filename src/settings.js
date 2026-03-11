@@ -99,6 +99,7 @@ export function createSettingsManager({ onChange } = {}) {
   const waveformSampler = createWaveformSampler();
   let selectionDrag = null;
   let handleDrag = null;
+  let playheadDrag = false;
   let lastTrimActionState = "";
   let playbackWatchId = 0;
   let lastTimeUpdateBucket = null;
@@ -852,6 +853,7 @@ export function createSettingsManager({ onChange } = {}) {
     resetPlaybackWatch();
     stopSelectionDrag();
     stopHandleDrag();
+    stopPlayheadDrag();
     waveformRequestId += 1;
     trimWaveformEl.classList.remove("is-loading");
     drawWaveform();
@@ -1336,15 +1338,33 @@ export function createSettingsManager({ onChange } = {}) {
     window.addEventListener("pointercancel", stopSelectionDrag);
   }
 
+  function stopPlayheadDrag() {
+    if (!playheadDrag) return;
+    window.removeEventListener("pointermove", handlePlayheadDragMove);
+    window.removeEventListener("pointerup", stopPlayheadDrag);
+    window.removeEventListener("pointercancel", stopPlayheadDrag);
+    playheadDrag = false;
+  }
+
+  function handlePlayheadDragMove(event) {
+    if (!playheadDrag) return;
+    seekPreview(sliderSecondsFromClientX(event.clientX));
+  }
+
   function handleTrimSliderPointerDown(event) {
     if (maxPreviewSeconds() === 0) return;
     if (event.target === trimSelectionFillEl) {
       startSelectionDrag(event);
       return;
     }
-    if (event.target.closest("input")) return;
+    if (event.target.closest(".trim-handle")) return;
+    event.preventDefault();
     markTrimUsed();
     seekPreview(sliderSecondsFromClientX(event.clientX));
+    playheadDrag = true;
+    window.addEventListener("pointermove", handlePlayheadDragMove);
+    window.addEventListener("pointerup", stopPlayheadDrag);
+    window.addEventListener("pointercancel", stopPlayheadDrag);
   }
 
   function bindEvents() {

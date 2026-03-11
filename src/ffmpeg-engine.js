@@ -28,9 +28,10 @@ function buildArgs(settings, inputName, outputName) {
   const args = [...preInputArgs, "-i", inputName, ...postInputArgs];
 
   if (fmt === "gif") {
-    const filter = settings.resolution !== "original"
-      ? `scale=${settings.resolution}:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`
-      : "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse";
+    const scaleExpr = settings.resolution !== "original"
+      ? `scale=${settings.resolution}:flags=lanczos`
+      : "scale='min(iw,640):-1':flags=lanczos";
+    const filter = `${scaleExpr},split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`;
     args.push("-vf", filter, "-loop", "0");
   } else if (isAudio) {
     const acodec = settings.audioCodec !== "auto" ? settings.audioCodec : defaults.acodec;

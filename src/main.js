@@ -485,7 +485,13 @@ function finishProgressSummary(wasCanceled) {
 async function startConversion() {
   if (state.isConverting) return;
 
-  const pendingItems = state.queue.filter((item) => item.status === "pending");
+  let pendingItems = state.queue.filter((item) => item.status === "pending");
+  if (!pendingItems.length) {
+    for (const item of state.queue) {
+      if (item.status === "done") markItemPending(item);
+    }
+    pendingItems = state.queue.filter((item) => item.status === "pending");
+  }
   if (!pendingItems.length) return;
 
   const settingsSnapshot = settingsManager.getSettings();

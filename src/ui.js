@@ -174,7 +174,7 @@ export function createUI({
     queueSection.classList.toggle("hidden", !hasQueue);
     settings.classList.toggle("hidden", !hasQueue);
 
-    convertBtn.disabled = isConverting || pendingCount === 0 || hasInvalidSettings;
+    convertBtn.disabled = isConverting || !hasQueue || hasInvalidSettings;
     cancelBtn.disabled = !isConverting;
     retryFailedBtn.classList.toggle("hidden", !hasRetryable);
     clearQueueBtn.disabled = isConverting;

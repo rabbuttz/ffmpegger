@@ -97,6 +97,7 @@ export function createUI({
       if (item.status === "done" && item.resultUrl) {
         actions.push(
           `<button class="inline-btn success" type="button" data-action="download" data-id="${item.id}">ダウンロード</button>`,
+          `<button class="inline-btn" type="button" data-action="requeue" data-id="${item.id}">再変換</button>`,
         );
       }
       if (item.status === "failed" || item.status === "canceled") {

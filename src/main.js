@@ -594,6 +594,19 @@ function retryQueueItem(id) {
   scheduleRender();
 }
 
+function reQueueItem(id) {
+  const item = state.queue.find((entry) => entry.id === id);
+  if (!item) return;
+
+  const newItem = createQueueItem(item.file);
+  state.queue.push(newItem);
+  enrichQueueItem(newItem);
+
+  syncTrimPreview();
+  updateEstimate();
+  scheduleRender();
+}
+
 function retryFailedItems() {
   let changed = false;
 
@@ -628,6 +641,7 @@ function handleQueueAction(action, id) {
   if (action === "download") downloadCompletedItem(id);
   if (action === "remove") removeQueueItem(id);
   if (action === "retry") retryQueueItem(id);
+  if (action === "requeue") reQueueItem(id);
 }
 
 async function bootstrap() {

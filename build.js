@@ -6,7 +6,7 @@ rmSync(DIST, { recursive: true, force: true });
 mkdirSync(DIST, { recursive: true });
 
 // Source files
-for (const entry of ["app.js", "style.css", "_headers"]) {
+for (const entry of ["app.js", "style.css", "_headers", "Logo.png", "OGP.png", "favicon.png", "favicon-32.png", "favicon-192.png"]) {
   cpSync(entry, `${DIST}/${entry}`);
 }
 cpSync("src", `${DIST}/src`, { recursive: true });

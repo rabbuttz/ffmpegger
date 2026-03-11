@@ -81,7 +81,7 @@ export function createUI({
     logOutput.textContent = "";
   }
 
-  function renderQueue(queue) {
+  function renderQueue(queue, selectedId) {
     if (!queue.length) {
       queueList.innerHTML = '<li class="queue-empty">ファイルを追加するとここに表示されます。</li>';
       return;
@@ -116,14 +116,17 @@ export function createUI({
       const messageHtml = messageText && messageText !== statusText
         ? `<div class="queue-message">${escapeHtml(messageText)}</div>`
         : "";
+      const fmt = item.config?.format;
+      const fmtBadge = fmt ? `<span class="queue-fmt-badge">${escapeHtml(fmt.toUpperCase())}</span>` : "";
+      const isSelected = item.id === selectedId;
 
       return `
-        <li class="queue-item status-${item.status}">
+        <li class="queue-item status-${item.status}${isSelected ? " is-selected" : ""}" data-action="select" data-id="${item.id}">
           ${thumbHtml}
           <div class="queue-main">
             <div class="queue-line">
               <span class="queue-name" title="${escapeHtml(item.file.name)}">${escapeHtml(item.file.name)}</span>
-              <span class="queue-state">${statusText}</span>
+              <span class="queue-state">${fmtBadge}${statusText}</span>
             </div>
             <div class="queue-meta">${escapeHtml(buildMetaText(item))}</div>
             ${progressHtml}

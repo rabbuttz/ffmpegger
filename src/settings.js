@@ -933,7 +933,6 @@ export function createSettingsManager({ onChange } = {}) {
 
     trimPreviewEl.classList.remove("hidden");
     trimPreviewFileEl.value = String(item.id);
-    resetTrimInputs();
     syncTrimState();
     loadWaveform(item);
   }
@@ -1439,10 +1438,35 @@ export function createSettingsManager({ onChange } = {}) {
     bindEvents();
   }
 
+  function applyItemConfig(config) {
+    if (!config) return;
+    ignoreEvents = true;
+    if (formatEl && config.format) formatEl.value = config.format;
+    syncCodecOptions(config.videoCodec, config.audioCodec);
+    if (qualityEl && config.quality) qualityEl.value = config.quality;
+    if (resolutionEl && config.resolution) resolutionEl.value = config.resolution;
+    trimStartEl.value = config.trimStart ?? "";
+    trimEndEl.value = config.trimEnd ?? "";
+    isTrimEnabled = Boolean(config.hasTrim || config.trimStart || config.trimEnd);
+    ignoreEvents = false;
+    syncFormatCards();
+    syncTrimState();
+    updateVisibility();
+  }
+
+  function setPreviewFocus(itemId) {
+    const item = previewItems.find((i) => i.id === itemId);
+    if (!item) return;
+    if (previewItemId === itemId && previewUrl) return;
+    loadPreviewItemById(itemId);
+  }
+
   return {
+    applyItemConfig,
     applyPreset,
     getSettings,
     init,
+    setPreviewFocus,
     syncCodecOptions,
     syncPreviewItems,
     updateVisibility,

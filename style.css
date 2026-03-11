@@ -402,11 +402,35 @@ body {
   border: 1px solid var(--border);
   border-radius: 13px;
   padding: 0.62rem;
+  cursor: pointer;
   transition: border-color 0.2s ease, transform 0.15s ease;
 }
 
 .queue-item:hover {
   border-color: #b8cddd;
+}
+
+.queue-item.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.queue-fmt-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 5px;
+  padding: 0.05em 0.42em;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}
+
+.queue-item.is-selected .queue-fmt-badge {
+  background: var(--accent);
+  color: #fff;
 }
 
 .thumb {

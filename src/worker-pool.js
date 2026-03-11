@@ -51,7 +51,7 @@ export function createWorkerPool({ onLog, onProgress } = {}) {
     }
   }
 
-  async function run(items, { parallelism, settings, isCanceled, onStage } = {}) {
+  async function run(items, { parallelism, isCanceled, onStage } = {}) {
     const workerCount = Math.max(1, Number(parallelism) || 1);
     await init(workerCount);
 
@@ -76,7 +76,7 @@ export function createWorkerPool({ onLog, onProgress } = {}) {
               }
               onStage?.({ item, payload, stage, worker });
             },
-            settings,
+            settings: item.config,
           });
 
           onStage?.({

@@ -20,6 +20,7 @@ const state = {
   nextQueueId: 1,
   queue: [],
   renderPending: false,
+  selectedItemId: null,
   zip: {
     cacheKey: "",
     fileName: "",
@@ -48,6 +49,10 @@ const workerPool = createWorkerPool({
 
 const settingsManager = createSettingsManager({
   onChange: (settings) => {
+    if (state.selectedItemId) {
+      const item = state.queue.find((i) => i.id === state.selectedItemId);
+      if (item) item.config = settings;
+    }
     updateEstimate();
     scheduleRender();
     if (!state.isConverting) {
@@ -58,6 +63,18 @@ const settingsManager = createSettingsManager({
 
 function syncTrimPreview() {
   settingsManager.syncPreviewItems(state.queue);
+  if (state.selectedItemId) {
+    settingsManager.setPreviewFocus(state.selectedItemId);
+  }
+}
+
+function selectQueueItem(id) {
+  const item = state.queue.find((i) => i.id === id);
+  if (!item) return;
+  state.selectedItemId = id;
+  settingsManager.applyItemConfig(item.config);
+  settingsManager.setPreviewFocus(id);
+  scheduleRender();
 }
 
 function isMediaFile(file) {
@@ -68,6 +85,7 @@ function isMediaFile(file) {
 
 function createQueueItem(file, { isSource = true } = {}) {
   return {
+    config: null,
     error: "",
     file,
     id: state.nextQueueId++,
@@ -82,6 +100,11 @@ function createQueueItem(file, { isSource = true } = {}) {
     status: "pending",
     thumbnail: null,
   };
+}
+
+function buildFreshItemConfig() {
+  const s = settingsManager.getSettings();
+  return { ...s, trimStart: "", trimEnd: "", trimStartSeconds: 0, trimEndSeconds: null, hasTrim: false, trimError: "" };
 }
 
 function pendingCount() {
@@ -112,7 +135,7 @@ function scheduleRender() {
   state.renderPending = true;
   requestAnimationFrame(() => {
     state.renderPending = false;
-    ui.renderQueue(state.queue);
+    ui.renderQueue(state.queue, state.selectedItemId);
     renderDownloads();
     updateControls();
   });
@@ -287,12 +310,18 @@ function addFiles(fileList) {
       continue;
     }
     const item = createQueueItem(file);
+    item.config = buildFreshItemConfig();
     state.queue.push(item);
     added += 1;
     enrichQueueItem(item);
   }
 
   if (added === 0) return;
+
+  if (state.selectedItemId === null) {
+    const firstNew = state.queue[state.queue.length - added];
+    if (firstNew) selectQueueItem(firstNew.id);
+  }
 
   syncTrimPreview();
   updateEstimate();
@@ -504,22 +533,25 @@ async function startConversion() {
     const sourceItems = state.queue.filter((item) => item.status === "done" && item.isSource);
     for (const item of sourceItems) {
       const newItem = createQueueItem(item.file, { isSource: false });
+      newItem.config = buildFreshItemConfig();
       newItem.metadata = item.metadata;
       newItem.thumbnail = item.thumbnail;
       state.queue.push(newItem);
     }
     pendingItems = state.queue.filter((item) => item.status === "pending");
+    if (pendingItems.length > 0) selectQueueItem(pendingItems[0].id);
   }
   if (!pendingItems.length) return;
 
-  const settingsSnapshot = settingsManager.getSettings();
-  if (settingsSnapshot.trimError) {
-    debugLog("convert", "Blocked conversion because trim settings are invalid");
+  const hasItemWithError = pendingItems.some((item) => item.config?.trimError);
+  if (hasItemWithError) {
+    debugLog("convert", "Blocked conversion because an item has invalid trim settings");
     updateEstimate();
     scheduleRender();
     return;
   }
-  const requestedParallelism = Math.max(1, Number(settingsSnapshot.parallelism) || 1);
+  const globalSettings = settingsManager.getSettings();
+  const requestedParallelism = Math.max(1, Number(globalSettings.parallelism) || 1);
   const workerCount = Math.min(requestedParallelism, pendingItems.length);
 
   state.isConverting = true;
@@ -549,7 +581,6 @@ async function startConversion() {
       isCanceled: () => state.cancelRequested,
       onStage: handleWorkerStage,
       parallelism: workerCount,
-      settings: settingsSnapshot,
     });
   } catch (error) {
     debugError("convert", "Failed to initialize worker pool", error, {
@@ -599,6 +630,12 @@ function removeQueueItem(id) {
   clearResult(item);
   state.queue.splice(idx, 1);
 
+  if (state.selectedItemId === item.id) {
+    const next = state.queue.find((i) => i.status !== "processing");
+    state.selectedItemId = null;
+    if (next) selectQueueItem(next.id);
+  }
+
   if (!state.queue.length) {
     ui.showProgress(false);
     ui.resetProgress();
@@ -623,6 +660,7 @@ function reQueueItem(id) {
   if (!item) return;
 
   const newItem = createQueueItem(item.file, { isSource: false });
+  newItem.config = buildFreshItemConfig();
   newItem.metadata = item.metadata;
   newItem.thumbnail = item.thumbnail;
   state.queue.push(newItem);
@@ -670,6 +708,7 @@ function renameResultItem(id, newName) {
 }
 
 function handleQueueAction(action, id, payload) {
+  if (action === "select") selectQueueItem(id);
   if (action === "download") downloadCompletedItem(id);
   if (action === "remove") removeQueueItem(id);
   if (action === "retry") retryQueueItem(id);

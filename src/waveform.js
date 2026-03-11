@@ -49,17 +49,19 @@ export function createWaveformSampler() {
     initPromise = (async () => {
       debugLog("waveform", "Loading waveform sampler");
       const [{ FFmpeg }, util] = await Promise.all([
-        import("/node_modules/@ffmpeg/ffmpeg/dist/esm/index.js"),
-        import("/node_modules/@ffmpeg/util/dist/esm/index.js"),
+        import("/vendor/@ffmpeg/ffmpeg/dist/esm/index.js"),
+        import("/vendor/@ffmpeg/util/dist/esm/index.js"),
       ]);
 
       fetchFile = util.fetchFile;
+      const { toBlobURL } = util;
       const instance = new FFmpeg();
 
+      const CDN = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
       await instance.load({
-        coreURL: "/node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.js",
-        wasmURL: "/node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.wasm",
-        classWorkerURL: "/node_modules/@ffmpeg/ffmpeg/dist/esm/worker.js",
+        coreURL: await toBlobURL(`${CDN}/ffmpeg-core.js`, "text/javascript"),
+        wasmURL: await toBlobURL(`${CDN}/ffmpeg-core.wasm`, "application/wasm"),
+        classWorkerURL: "/vendor/@ffmpeg/ffmpeg/dist/esm/worker.js",
       });
 
       ffmpeg = instance;

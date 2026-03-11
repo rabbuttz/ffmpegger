@@ -1425,7 +1425,6 @@ export function createSettingsManager({ onChange } = {}) {
 
   return {
     applyItemConfig,
-    applyPreset,
     getSettings,
     init,
     setPreviewFocus,

@@ -53,7 +53,10 @@ function requestPathFromUrl(url) {
 
 function resolveFilePath(requestPath) {
   if (!requestPath?.startsWith("/")) return null;
-  const filePath = resolve(ROOT_DIR, `.${requestPath}`);
+  const mapped = requestPath.startsWith("/vendor/")
+    ? requestPath.replace("/vendor/", "/node_modules/")
+    : requestPath;
+  const filePath = resolve(ROOT_DIR, `.${mapped}`);
   return filePath.startsWith(ROOT_DIR) ? filePath : null;
 }
 

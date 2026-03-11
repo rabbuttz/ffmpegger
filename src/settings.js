@@ -578,7 +578,8 @@ export function createSettingsManager({ onChange } = {}) {
   function percentForSeconds(value) {
     const maxSeconds = maxPreviewSeconds();
     if (maxSeconds === 0) return 0;
-    return (clampPreviewSeconds(value) / maxSeconds) * 100;
+    const clamped = Math.max(0, Math.min(maxSeconds, Number.isFinite(value) ? value : 0));
+    return (clamped / maxSeconds) * 100;
   }
 
   function activePreviewMedia() {

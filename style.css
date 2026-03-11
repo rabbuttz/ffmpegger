@@ -1280,6 +1280,22 @@ body {
   filter: saturate(1.4);
 }
 
+.trim-preview.is-audio-only .trim-handle {
+  height: 96px;
+}
+
+.trim-preview.is-audio-only .trim-handle::-webkit-slider-runnable-track {
+  height: 96px;
+}
+
+.trim-preview.is-audio-only .trim-handle::-moz-range-track {
+  height: 96px;
+}
+
+.trim-preview.is-audio-only .trim-handle::-webkit-slider-thumb {
+  margin-top: 39px;
+}
+
 .trim-selection-track,
 .trim-selection-fill {
   position: absolute;

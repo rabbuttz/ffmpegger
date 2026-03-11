@@ -528,19 +528,7 @@ function finishProgressSummary(wasCanceled) {
 async function startConversion() {
   if (state.isConverting) return;
 
-  let pendingItems = state.queue.filter((item) => item.status === "pending");
-  if (!pendingItems.length) {
-    const sourceItems = state.queue.filter((item) => item.status === "done" && item.isSource);
-    for (const item of sourceItems) {
-      const newItem = createQueueItem(item.file, { isSource: false });
-      newItem.config = buildFreshItemConfig();
-      newItem.metadata = item.metadata;
-      newItem.thumbnail = item.thumbnail;
-      state.queue.push(newItem);
-    }
-    pendingItems = state.queue.filter((item) => item.status === "pending");
-    if (pendingItems.length > 0) selectQueueItem(pendingItems[0].id);
-  }
+  const pendingItems = state.queue.filter((item) => item.status === "pending");
   if (!pendingItems.length) return;
 
   const hasItemWithError = pendingItems.some((item) => item.config?.trimError);

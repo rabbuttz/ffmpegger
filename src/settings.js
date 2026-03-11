@@ -74,8 +74,8 @@ export function createSettingsManager({ onChange } = {}) {
   const trimCurrentMarkerEl = $("#trim-current-marker");
   const trimCurrentTimeEl = $("#trim-current-time");
   const trimDurationEl = $("#trim-duration");
-  const trimStartRangeEl = $("#trim-start-range");
-  const trimEndRangeEl = $("#trim-end-range");
+  const trimHandleStartEl = $("#trim-handle-start");
+  const trimHandleEndEl = $("#trim-handle-end");
   const trimStartDisplayEl = $("#trim-start-display");
   const trimEndDisplayEl = $("#trim-end-display");
 
@@ -98,6 +98,7 @@ export function createSettingsManager({ onChange } = {}) {
   const waveformCache = new Map();
   const waveformSampler = createWaveformSampler();
   let selectionDrag = null;
+  let handleDrag = null;
   let lastTrimActionState = "";
   let playbackWatchId = 0;
   let lastTimeUpdateBucket = null;
@@ -746,18 +747,17 @@ export function createSettingsManager({ onChange } = {}) {
       : clampPreviewSeconds(trimState.endSeconds, maxSeconds);
     const safeEndValue = maxSeconds > 0 ? Math.max(minGap || maxSeconds, endValue) : 0;
 
-    trimStartRangeEl.min = "0";
-    trimEndRangeEl.min = String(maxSeconds > 0 ? minGap : 0);
     trimPlayheadEl.min = "0";
     trimPlayheadEl.step = String(TRIM_STEP);
-    trimStartRangeEl.step = String(TRIM_STEP);
-    trimEndRangeEl.step = String(TRIM_STEP);
-    trimStartRangeEl.max = String(startMax);
-    trimEndRangeEl.max = String(maxSeconds);
-    trimStartRangeEl.value = String(startValue);
-    trimEndRangeEl.value = String(safeEndValue);
-    trimStartRangeEl.disabled = maxSeconds === 0;
-    trimEndRangeEl.disabled = maxSeconds === 0;
+    const isDisabled = maxSeconds === 0;
+    trimHandleStartEl.classList.toggle("is-disabled", isDisabled);
+    trimHandleEndEl.classList.toggle("is-disabled", isDisabled);
+    trimHandleStartEl.style.left = `${percentForSeconds(startValue)}%`;
+    trimHandleEndEl.style.left = `${percentForSeconds(safeEndValue)}%`;
+    trimHandleStartEl.setAttribute("aria-valuenow", String(startValue));
+    trimHandleEndEl.setAttribute("aria-valuenow", String(safeEndValue));
+    trimHandleStartEl.setAttribute("aria-valuemax", String(maxSeconds));
+    trimHandleEndEl.setAttribute("aria-valuemax", String(maxSeconds));
     trimStartDisplayEl.textContent = formatClock(startValue);
     trimEndDisplayEl.textContent = trimState.endSeconds === null ? "最後まで" : formatClock(safeEndValue);
     trimSelectionFillEl.style.left = `${percentForSeconds(startValue)}%`;
@@ -851,6 +851,7 @@ export function createSettingsManager({ onChange } = {}) {
     });
     resetPlaybackWatch();
     stopSelectionDrag();
+    stopHandleDrag();
     waveformRequestId += 1;
     trimWaveformEl.classList.remove("is-loading");
     drawWaveform();
@@ -1124,26 +1125,55 @@ export function createSettingsManager({ onChange } = {}) {
     seekPreview(nextTime);
   }
 
-  function handleStartRangeInput() {
-    if (maxPreviewSeconds() === 0) return;
-
-    const startSeconds = clampPreviewSeconds(Number(trimStartRangeEl.value) || 0);
-    const trimState = getTrimState();
-    const nextEnd = trimState.endSeconds !== null && trimState.endSeconds <= startSeconds
-      ? Math.min(maxPreviewSeconds(), startSeconds + trimGap())
-      : trimState.endSeconds;
-    applyTrimRange(startSeconds, nextEnd, { seekTo: startSeconds });
+  function stopHandleDrag() {
+    if (!handleDrag) return;
+    window.removeEventListener("pointermove", handleHandleDragMove);
+    window.removeEventListener("pointerup", stopHandleDrag);
+    window.removeEventListener("pointercancel", stopHandleDrag);
+    handleDrag.el.classList.remove("is-dragging");
+    handleDrag = null;
   }
 
-  function handleEndRangeInput() {
-    if (maxPreviewSeconds() === 0) return;
+  function handleHandleDragMove(event) {
+    if (!handleDrag) return;
+    const rect = trimSelectionSliderEl.getBoundingClientRect();
+    if (!rect.width) return;
 
-    const endSeconds = clampPreviewSeconds(Number(trimEndRangeEl.value) || 0, maxPreviewSeconds());
+    const deltaRatio = (event.clientX - handleDrag.originX) / rect.width;
+    const rawValue = clampPreviewSeconds(handleDrag.originValue + deltaRatio * handleDrag.maxSeconds);
     const trimState = getTrimState();
-    const nextStart = (trimState.startSeconds ?? 0) >= endSeconds
-      ? Math.max(0, endSeconds - trimGap())
-      : trimState.startSeconds ?? 0;
-    applyTrimRange(nextStart, endSeconds, { seekTo: endSeconds });
+
+    if (handleDrag.which === "start") {
+      const nextEnd = trimState.endSeconds !== null && trimState.endSeconds <= rawValue
+        ? Math.min(handleDrag.maxSeconds, rawValue + trimGap())
+        : trimState.endSeconds;
+      applyTrimRange(rawValue, nextEnd, { seekTo: rawValue });
+    } else {
+      const atEnd = rawValue >= handleDrag.maxSeconds - trimGap();
+      const endSeconds = atEnd ? null : rawValue;
+      const nextStart = (trimState.startSeconds ?? 0) >= (endSeconds ?? handleDrag.maxSeconds)
+        ? Math.max(0, (endSeconds ?? handleDrag.maxSeconds) - trimGap())
+        : trimState.startSeconds ?? 0;
+      applyTrimRange(nextStart, endSeconds, { seekTo: atEnd ? handleDrag.maxSeconds : rawValue });
+    }
+  }
+
+  function startHandleDrag(event, which) {
+    if (maxPreviewSeconds() === 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    const trimState = getTrimState();
+    const originValue = which === "start"
+      ? clampPreviewSeconds(trimState.startSeconds ?? 0)
+      : previewEndSeconds(trimState);
+    const el = which === "start" ? trimHandleStartEl : trimHandleEndEl;
+    el.classList.add("is-dragging");
+
+    handleDrag = { el, maxSeconds: maxPreviewSeconds(), originValue, originX: event.clientX, which };
+    window.addEventListener("pointermove", handleHandleDragMove);
+    window.addEventListener("pointerup", stopHandleDrag);
+    window.addEventListener("pointercancel", stopHandleDrag);
   }
 
   function handleTrimReset() {
@@ -1354,8 +1384,8 @@ export function createSettingsManager({ onChange } = {}) {
     });
 
     trimPlayheadEl.addEventListener("input", handlePlayheadInput);
-    trimStartRangeEl.addEventListener("input", handleStartRangeInput);
-    trimEndRangeEl.addEventListener("input", handleEndRangeInput);
+    trimHandleStartEl.addEventListener("pointerdown", (e) => startHandleDrag(e, "start"));
+    trimHandleEndEl.addEventListener("pointerdown", (e) => startHandleDrag(e, "end"));
     trimSelectionSliderEl.addEventListener("pointerdown", handleTrimSliderPointerDown);
     trimSetStartBtnEl.addEventListener("click", () => setTrimFromCurrent("start"));
     trimSeekStartBtnEl.addEventListener("click", seekToTrimStart);

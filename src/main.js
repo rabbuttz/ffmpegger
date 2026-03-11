@@ -66,11 +66,12 @@ function isMediaFile(file) {
   return ACCEPTED_EXTENSIONS.has(getExtension(file.name));
 }
 
-function createQueueItem(file) {
+function createQueueItem(file, { isSource = true } = {}) {
   return {
     error: "",
     file,
     id: state.nextQueueId++,
+    isSource,
     message: "待機中",
     metadata: null,
     progress: 0,
@@ -500,11 +501,12 @@ async function startConversion() {
 
   let pendingItems = state.queue.filter((item) => item.status === "pending");
   if (!pendingItems.length) {
-    const doneItems = state.queue.filter((item) => item.status === "done");
-    for (const item of doneItems) {
-      const newItem = createQueueItem(item.file);
+    const sourceItems = state.queue.filter((item) => item.status === "done" && item.isSource);
+    for (const item of sourceItems) {
+      const newItem = createQueueItem(item.file, { isSource: false });
+      newItem.metadata = item.metadata;
+      newItem.thumbnail = item.thumbnail;
       state.queue.push(newItem);
-      enrichQueueItem(newItem);
     }
     pendingItems = state.queue.filter((item) => item.status === "pending");
   }
@@ -620,9 +622,10 @@ function reQueueItem(id) {
   const item = state.queue.find((entry) => entry.id === id);
   if (!item) return;
 
-  const newItem = createQueueItem(item.file);
+  const newItem = createQueueItem(item.file, { isSource: false });
+  newItem.metadata = item.metadata;
+  newItem.thumbnail = item.thumbnail;
   state.queue.push(newItem);
-  enrichQueueItem(newItem);
 
   syncTrimPreview();
   updateEstimate();

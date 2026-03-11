@@ -113,10 +113,10 @@ export function createFfmpegEngine({ onLog, onProgress } = {}) {
         if (typeof onProgress === "function") onProgress(progress);
       });
 
-      const CDN = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
+      const CORE_BASE = "/vendor/@ffmpeg/core/dist/esm";
       await instance.load({
-        coreURL: await toBlobURL(`${CDN}/ffmpeg-core.js`, "text/javascript"),
-        wasmURL: await toBlobURL(`${CDN}/ffmpeg-core.wasm`, "application/wasm"),
+        coreURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.js`, "text/javascript"),
+        wasmURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.wasm`, "application/wasm"),
         classWorkerURL: "/vendor/@ffmpeg/ffmpeg/dist/esm/worker.js",
       });
 

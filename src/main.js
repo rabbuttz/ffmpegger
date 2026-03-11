@@ -637,11 +637,19 @@ function clearQueue() {
   scheduleRender();
 }
 
-function handleQueueAction(action, id) {
+function renameResultItem(id, newName) {
+  const item = state.queue.find((entry) => entry.id === id);
+  if (!item || item.status !== "done") return;
+  item.resultName = newName;
+  invalidateZipCache();
+}
+
+function handleQueueAction(action, id, payload) {
   if (action === "download") downloadCompletedItem(id);
   if (action === "remove") removeQueueItem(id);
   if (action === "retry") retryQueueItem(id);
   if (action === "requeue") reQueueItem(id);
+  if (action === "rename") renameResultItem(id, payload);
 }
 
 async function bootstrap() {

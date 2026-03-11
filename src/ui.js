@@ -162,7 +162,7 @@ export function createUI({
     downloadsList.innerHTML = items.map((item) => `
       <li class="download-item">
         <div class="download-item-main">
-          <span class="download-item-name" title="${escapeHtml(item.resultName)}">${escapeHtml(item.resultName)}</span>
+          <input class="download-item-name" type="text" value="${escapeHtml(item.resultName)}" data-action="rename" data-id="${item.id}" aria-label="ファイル名">
           <span class="download-item-meta">${formatSize(item.resultSize)}</span>
         </div>
         <button class="inline-btn success" type="button" data-action="download" data-id="${item.id}">ダウンロード</button>
@@ -258,10 +258,18 @@ export function createUI({
 
     downloadsList.addEventListener("click", (e) => {
       const target = e.target.closest("[data-action]");
-      if (!target || typeof onQueueAction !== "function") return;
+      if (!target || target.tagName === "INPUT" || typeof onQueueAction !== "function") return;
       const id = Number(target.dataset.id);
       if (!Number.isFinite(id)) return;
       onQueueAction(target.dataset.action, id);
+    });
+
+    downloadsList.addEventListener("change", (e) => {
+      const target = e.target.closest("[data-action='rename']");
+      if (!target || typeof onQueueAction !== "function") return;
+      const id = Number(target.dataset.id);
+      if (!Number.isFinite(id)) return;
+      onQueueAction("rename", id, target.value.trim() || target.defaultValue);
     });
 
     convertBtn.addEventListener("click", () => {

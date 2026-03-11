@@ -1263,6 +1263,23 @@ body {
   opacity: 0.55;
 }
 
+.trim-preview.is-audio-only .trim-preview-media {
+  display: none;
+}
+
+.trim-preview.is-audio-only .trim-selection-slider {
+  height: 96px;
+  border-radius: 16px;
+  background:
+    radial-gradient(300px 160px at 50% 50%, rgba(34, 91, 118, 0.1), transparent 80%),
+    linear-gradient(180deg, #f0f8ff, #e6f2f8);
+  border: 1px solid rgba(100, 160, 190, 0.2);
+}
+
+.trim-preview.is-audio-only .trim-waveform {
+  filter: saturate(1.4);
+}
+
 .trim-selection-track,
 .trim-selection-fill {
   position: absolute;

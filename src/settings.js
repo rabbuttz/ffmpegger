@@ -862,6 +862,7 @@ export function createSettingsManager({ onChange } = {}) {
     trimPreviewFileEl.innerHTML = "";
     trimPreviewPickerEl.classList.add("hidden");
     trimPreviewEl.classList.add("hidden");
+    trimPreviewEl.classList.remove("is-audio-only");
     syncTrimPreviewControls();
   }
 
@@ -893,14 +894,15 @@ export function createSettingsManager({ onChange } = {}) {
     clearMediaElement(trimAudioEl);
     revokePreviewUrl();
 
-    const mediaEl = mediaKind(item) === "video" ? trimVideoEl : trimAudioEl;
+    const kind = mediaKind(item);
+    const mediaEl = kind === "video" ? trimVideoEl : trimAudioEl;
     previewUrl = URL.createObjectURL(item.file);
     restorePreviewAudioOutput(mediaEl, "load-preview-item");
     logVideoPreviewAudioPath(mediaEl, "load-preview-item");
     debugLog("preview", "Loading preview item", {
       fileName: item.file.name,
       fileType: item.file.type,
-      mediaKind: mediaKind(item),
+      mediaKind: kind,
       metadataDuration: roundSeconds(item.metadata?.duration),
       previewItemId: item.id,
       size: item.file.size,
@@ -910,6 +912,7 @@ export function createSettingsManager({ onChange } = {}) {
     mediaEl.load();
 
     trimPreviewEl.classList.remove("hidden");
+    trimPreviewEl.classList.toggle("is-audio-only", kind === "audio");
     trimPreviewFileEl.value = String(item.id);
     syncTrimState();
     loadWaveform(item);

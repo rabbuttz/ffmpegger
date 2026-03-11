@@ -6,7 +6,6 @@ import {
   FORMAT_CODEC_COMPAT,
   FORMAT_DEFAULTS,
   OUTPUT_FORMAT_GROUPS,
-  PRESETS,
   QUALITY_MAP,
   STORAGE_KEY,
 } from "./constants.js";
@@ -43,7 +42,6 @@ function mediaKind(item) {
 }
 
 export function createSettingsManager({ onChange } = {}) {
-  const presetEl = $("#preset");
   const formatEl = $("#output-format");
   const videoCodecEl = $("#video-codec");
   const audioCodecEl = $("#audio-codec");
@@ -533,7 +531,6 @@ export function createSettingsManager({ onChange } = {}) {
   function getSettings() {
     const trimState = getTrimState();
     return {
-      preset: presetEl.value,
       format: formatEl.value,
       videoCodec: videoCodecEl.value,
       audioCodec: audioCodecEl.value,
@@ -552,7 +549,6 @@ export function createSettingsManager({ onChange } = {}) {
   function saveSettings() {
     const settings = getSettings();
     const payload = {
-      preset: settings.preset,
       outputFormat: settings.format,
       videoCodec: settings.videoCodec,
       audioCodec: settings.audioCodec,
@@ -847,24 +843,6 @@ export function createSettingsManager({ onChange } = {}) {
     }
   }
 
-  function applyPreset(name) {
-    const preset = PRESETS[name];
-    if (!preset) return;
-
-    ignoreEvents = true;
-    formatEl.value = preset.format;
-    syncCodecOptions(preset.videoCodec, preset.audioCodec);
-    syncFormatCards();
-    qualityEl.value = preset.quality;
-    resolutionEl.value = preset.resolution;
-    presetEl.value = name;
-    ignoreEvents = false;
-
-    updateVisibility();
-    saveSettings();
-    notifyChange();
-  }
-
   function clearPreview() {
     debugLog("preview", "Clearing preview", {
       previewItemCount: previewItems.length,
@@ -1010,12 +988,6 @@ export function createSettingsManager({ onChange } = {}) {
       if (typeof saved.trimEnd === "string") {
         trimEndEl.value = saved.trimEnd;
       }
-      if (saved.preset === "custom" || PRESETS[saved.preset]) {
-        presetEl.value = saved.preset;
-      } else {
-        presetEl.value = "custom";
-      }
-
       ignoreEvents = false;
       syncTrimState();
       setAdvancedMode(isAdvancedMode, { silent: true });
@@ -1032,16 +1004,6 @@ export function createSettingsManager({ onChange } = {}) {
 
   function handleChange(sourceId) {
     if (ignoreEvents) return;
-
-    if (sourceId === "preset") {
-      const presetName = presetEl.value;
-      if (presetName !== "custom") {
-        applyPreset(presetName);
-        return;
-      }
-    } else {
-      presetEl.value = "custom";
-    }
 
     if (sourceId === "output-format") {
       syncFormatCards();
@@ -1352,7 +1314,7 @@ export function createSettingsManager({ onChange } = {}) {
   }
 
   function bindEvents() {
-    const settingIds = ["preset", "output-format", "video-codec", "audio-codec", "quality", "resolution"];
+    const settingIds = ["output-format", "video-codec", "audio-codec", "quality", "resolution"];
     for (const id of settingIds) {
       $(`#${id}`).addEventListener("change", () => handleChange(id));
     }

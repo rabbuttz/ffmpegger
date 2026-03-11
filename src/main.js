@@ -313,11 +313,24 @@ function markItemProcessing(item, message = "入力を読み込み中...") {
   item.status = "processing";
 }
 
+function uniqueResultName(baseName) {
+  const taken = new Set(
+    state.queue.filter((i) => i.status === "done" && i.resultName).map((i) => i.resultName),
+  );
+  if (!taken.has(baseName)) return baseName;
+  const dot = baseName.lastIndexOf(".");
+  const stem = dot >= 0 ? baseName.slice(0, dot) : baseName;
+  const ext = dot >= 0 ? baseName.slice(dot) : "";
+  let n = 2;
+  while (taken.has(`${stem}_${n}${ext}`)) n++;
+  return `${stem}_${n}${ext}`;
+}
+
 function finalizeItemSuccess(item, result) {
   clearResult(item);
   item.resultBlob = result.blob;
   item.resultUrl = URL.createObjectURL(result.blob);
-  item.resultName = result.resultName;
+  item.resultName = uniqueResultName(result.resultName);
   item.resultSize = result.blob.size;
   item.status = "done";
   item.progress = 100;
@@ -487,8 +500,11 @@ async function startConversion() {
 
   let pendingItems = state.queue.filter((item) => item.status === "pending");
   if (!pendingItems.length) {
-    for (const item of state.queue) {
-      if (item.status === "done") markItemPending(item);
+    const doneItems = state.queue.filter((item) => item.status === "done");
+    for (const item of doneItems) {
+      const newItem = createQueueItem(item.file);
+      state.queue.push(newItem);
+      enrichQueueItem(newItem);
     }
     pendingItems = state.queue.filter((item) => item.status === "pending");
   }

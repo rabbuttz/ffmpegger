@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FFmpegger - Browser Media Converter</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+  <body>
+  <div class="container">
+    <header class="hero">
+      <p class="hero-kicker">BROWSER NATIVE MEDIA ATELIER</p>
+      <div class="brand-lockup">
+        <div class="brand-mark" aria-hidden="true">
+          <span class="brand-mark-main">FF</span>
+          <span class="brand-mark-sub">LOCAL</span>
+        </div>
+        <div class="brand-copy">
+          <h1><span class="brand-name">FFmpegger</span></h1>
+          <p class="subtitle">ブラウザだけで、かんたん動画・音声変換</p>
+          <p class="hero-caption">Trim, convert, and save without leaving the tab.</p>
+        </div>
+      </div>
+    </header>
+
+    <div id="loading-screen" class="loading-screen">
+      <div class="spinner"></div>
+      <p>FFmpeg を読み込み中...</p>
+    </div>
+
+    <main id="app" class="hidden">
+      <div id="drop-zone" class="drop-zone" role="button" tabindex="0" aria-label="ファイルを追加">
+        <div class="drop-zone-content">
+          <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <p>ここにファイルをドラッグ&ドロップ</p>
+          <p class="drop-zone-hint">複数ファイル対応 / サーバーには送信されません</p>
+          <label class="file-btn" for="file-input">ファイルを選択</label>
+          <input type="file" id="file-input" multiple accept="video/*,audio/*,.mkv,.avi,.flv,.wmv,.mov,.webm,.mp4,.m4a,.flac,.ogg,.opus,.wav,.aac,.wma" hidden>
+        </div>
+      </div>
+
+      <section id="queue-section" class="queue-section hidden">
+        <div class="queue-header">
+          <h2>変換キュー</h2>
+          <button id="clear-queue-btn" class="ghost-btn" type="button">キューをクリア</button>
+        </div>
+        <ul id="queue-list" class="queue-list" aria-live="polite"></ul>
+      </section>
+
+      <section id="settings" class="settings hidden">
+        <h2>変換設定</h2>
+
+        <div class="setting-group format-picker-group">
+          <div class="format-picker-header">
+            <div class="format-picker-copy">
+              <label for="output-format" class="setting-label">
+                <span class="setting-icon icon-format" aria-hidden="true"></span>
+                <span>出力形式</span>
+              </label>
+            </div>
+          </div>
+          <div id="format-cards" class="format-cards" role="radiogroup" aria-label="出力形式"></div>
+          <select id="output-format" hidden></select>
+        </div>
+
+        <div class="setting-group trim-setting-group">
+          <details id="trim-disclosure" class="trim-disclosure">
+            <summary class="trim-disclosure-toggle">
+              <div class="trim-toggle-copy">
+                <span class="setting-label">
+                  <span class="setting-icon icon-trim" aria-hidden="true"></span>
+                  <span>トリミング</span>
+                </span>
+                <p class="trim-lead">必要なときだけ開いて、開始と終了を決めます。</p>
+              </div>
+              <span id="trim-toggle-chip" class="trim-toggle-chip">オフ</span>
+            </summary>
+            <div class="trim-disclosure-body">
+              <div class="trim-grid" hidden aria-hidden="true">
+                <label class="trim-field" for="trim-start">
+                  <span>開始</span>
+                  <input id="trim-start" type="text" inputmode="numeric" autocomplete="off" placeholder="00:00:00">
+                </label>
+                <label class="trim-field" for="trim-end">
+                  <span>終了</span>
+                  <input id="trim-end" type="text" inputmode="numeric" autocomplete="off" placeholder="00:00:30">
+                </label>
+              </div>
+              <div id="trim-preview" class="trim-preview hidden">
+                <div class="trim-preview-header">
+                  <div class="trim-summary-card">
+                    <span class="trim-summary-label">選択中</span>
+                    <strong id="trim-selection-summary">フル尺をそのまま出力</strong>
+                    <span id="trim-selection-detail">00:00:00 から最後まで</span>
+                  </div>
+                  <div id="trim-preview-picker" class="trim-preview-picker hidden">
+                    <label for="trim-preview-file">プレビュー対象</label>
+                    <select id="trim-preview-file"></select>
+                  </div>
+                </div>
+                <div class="trim-preview-media">
+                  <video id="trim-video" class="trim-media hidden" controls playsinline preload="metadata"></video>
+                  <audio id="trim-audio" class="trim-audio hidden" controls preload="metadata"></audio>
+                </div>
+                <div class="trim-timeline">
+                  <div class="trim-time-row">
+                    <button id="trim-jump-back-btn" class="chip-btn trim-icon-btn" type="button" aria-label="1フレーム戻る" title="1フレーム戻る">
+                      <span class="trim-mini-icon trim-mini-icon-back" aria-hidden="true"></span>
+                    </button>
+                    <span id="trim-current-time" class="trim-time-badge">00:00:00</span>
+                    <input id="trim-playhead" type="range" min="0" max="0" step="0.001" value="0">
+                    <span id="trim-duration" class="trim-time-badge">00:00:00</span>
+                    <button id="trim-jump-forward-btn" class="chip-btn trim-icon-btn" type="button" aria-label="1フレーム進む" title="1フレーム進む">
+                      <span class="trim-mini-icon trim-mini-icon-forward" aria-hidden="true"></span>
+                    </button>
+                  </div>
+                </div>
+                <div class="trim-selection">
+                  <div class="trim-selection-topline">
+                    <div class="trim-range-head">
+                      <span>範囲</span>
+                      <span>ドラッグで調整</span>
+                    </div>
+                    <div class="trim-selection-actions" aria-label="トリミング操作">
+                      <div class="trim-quick-actions trim-quick-actions-start">
+                        <button id="trim-set-start-btn" class="chip-btn trim-icon-btn" type="button" aria-label="現在位置を開始に" title="現在位置を開始に">
+                          <span class="trim-mini-icon trim-mini-icon-mark-start" aria-hidden="true"></span>
+                        </button>
+                        <button id="trim-seek-start-btn" class="chip-btn trim-icon-btn" type="button" aria-label="再生位置を開始に" title="再生位置を開始に">
+                          <span class="trim-mini-icon trim-mini-icon-start" aria-hidden="true"></span>
+                        </button>
+                      </div>
+                      <button id="trim-play-selection-btn" class="chip-btn trim-play-btn" type="button" aria-label="選択区間を再生" aria-pressed="false" title="選択区間を再生">
+                        <span id="trim-play-selection-icon" class="trim-mini-icon trim-mini-icon-play" aria-hidden="true"></span>
+                      </button>
+                      <div class="trim-quick-actions trim-quick-actions-end">
+                        <button id="trim-seek-end-btn" class="chip-btn trim-icon-btn" type="button" aria-label="再生位置を終了に" title="再生位置を終了に">
+                          <span class="trim-mini-icon trim-mini-icon-end" aria-hidden="true"></span>
+                        </button>
+                        <button id="trim-set-end-btn" class="chip-btn trim-icon-btn" type="button" aria-label="現在位置を終了に" title="現在位置を終了に">
+                          <span class="trim-mini-icon trim-mini-icon-mark-end" aria-hidden="true"></span>
+                        </button>
+                        <button id="trim-reset-btn" class="chip-btn trim-icon-btn" type="button" aria-label="リセット" title="リセット">
+                          <span class="trim-mini-icon trim-mini-icon-reset" aria-hidden="true"></span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="trim-selection-slider" class="trim-selection-slider">
+                    <div class="trim-selection-track"></div>
+                    <div id="trim-selection-fill" class="trim-selection-fill"></div>
+                    <canvas id="trim-waveform" class="trim-waveform" aria-hidden="true"></canvas>
+                    <div id="trim-current-marker" class="trim-current-marker"></div>
+                    <input id="trim-start-range" class="trim-handle trim-handle-start" type="range" min="0" max="0" step="0.001" value="0">
+                    <input id="trim-end-range" class="trim-handle trim-handle-end" type="range" min="0" max="0" step="0.001" value="0">
+                  </div>
+                  <div class="trim-range-values">
+                    <span>開始 <strong id="trim-start-display">00:00:00</strong></span>
+                    <span>終了 <strong id="trim-end-display">最後まで</strong></span>
+                  </div>
+                </div>
+              </div>
+              <p id="trim-error" class="setting-error hidden" aria-live="polite"></p>
+            </div>
+          </details>
+        </div>
+
+        <div class="setting-group advanced-toggle-group">
+          <div class="advanced-toggle-copy">
+            <span class="setting-label">
+              <span class="setting-icon icon-preset" aria-hidden="true"></span>
+              <span>詳細設定</span>
+            </span>
+          </div>
+          <button id="advanced-toggle" class="advanced-toggle" type="button" aria-expanded="false">
+            詳細設定
+          </button>
+        </div>
+
+        <div id="advanced-settings" class="advanced-settings hidden">
+          <div class="setting-group">
+            <label for="preset" class="setting-label">
+              <span class="setting-icon icon-preset" aria-hidden="true"></span>
+              <span>プリセット</span>
+            </label>
+            <select id="preset">
+              <option value="custom" selected>カスタム</option>
+              <option value="hq">高画質</option>
+              <option value="balanced">標準</option>
+              <option value="small">軽量 (小サイズ)</option>
+              <option value="extract-audio">音声抽出</option>
+            </select>
+          </div>
+
+          <div class="setting-group hidden">
+            <label for="parallelism" class="setting-label">
+              <span class="setting-icon icon-parallel" aria-hidden="true"></span>
+              <span>同時変換</span>
+            </label>
+            <select id="parallelism">
+              <option value="1">1本</option>
+              <option value="2">2本</option>
+              <option value="3" selected>3本</option>
+            </select>
+          </div>
+
+          <div id="video-settings" class="setting-group">
+            <label for="video-codec" class="setting-label">
+              <span class="setting-icon icon-video" aria-hidden="true"></span>
+              <span>映像コーデック</span>
+            </label>
+            <select id="video-codec"></select>
+          </div>
+
+          <div id="audio-codec-group" class="setting-group">
+            <label for="audio-codec" class="setting-label">
+              <span class="setting-icon icon-audio" aria-hidden="true"></span>
+              <span>音声コーデック</span>
+            </label>
+            <select id="audio-codec"></select>
+          </div>
+
+          <div id="quality-group" class="setting-group">
+            <label for="quality" class="setting-label">
+              <span class="setting-icon icon-quality" aria-hidden="true"></span>
+              <span>品質</span>
+            </label>
+            <select id="quality">
+              <option value="high">高品質</option>
+              <option value="medium" selected>標準</option>
+              <option value="low">低品質 (小サイズ)</option>
+            </select>
+          </div>
+
+          <div id="resolution-group" class="setting-group">
+            <label for="resolution" class="setting-label">
+              <span class="setting-icon icon-resolution" aria-hidden="true"></span>
+              <span>解像度</span>
+            </label>
+            <select id="resolution">
+              <option value="original">元のまま</option>
+              <option value="1920:1080">1080p (1920x1080)</option>
+              <option value="1280:720">720p (1280x720)</option>
+              <option value="854:480">480p (854x480)</option>
+              <option value="640:360">360p (640x360)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="estimate-box" class="estimate-box" aria-live="polite"></div>
+
+        <div class="action-row">
+          <button id="convert-btn" class="convert-btn" type="button" disabled>変換開始</button>
+          <button id="cancel-btn" class="cancel-btn" type="button" disabled>キャンセル</button>
+        </div>
+        <button id="retry-failed-btn" class="secondary-btn hidden" type="button">失敗/中断を再試行</button>
+      </section>
+
+      <section id="progress-section" class="progress-section hidden">
+        <h2 id="progress-title">変換中...</h2>
+        <div class="progress-bar">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <p id="progress-text" class="progress-text" aria-live="polite">準備中...</p>
+        <p id="progress-current" class="progress-current"></p>
+        <pre id="log-output" class="log-output"></pre>
+      </section>
+
+      <section id="downloads-section" class="downloads-section hidden">
+        <div class="downloads-header">
+          <div>
+            <h2>ダウンロード</h2>
+            <p id="downloads-summary" class="downloads-summary"></p>
+          </div>
+          <div class="downloads-actions">
+            <button id="download-all-btn" class="download-all-btn" type="button">すべて保存</button>
+            <button id="download-zip-btn" class="download-zip-btn" type="button">ZIPでまとめて保存</button>
+          </div>
+        </div>
+        <p id="downloads-message" class="downloads-message hidden"></p>
+        <ul id="downloads-list" class="downloads-list" aria-live="polite"></ul>
+      </section>
+    </main>
+
+    <footer>
+      <p>全ての処理はブラウザ内で完結します。ファイルはサーバーにアップロードされません。</p>
+    </footer>
+  </div>
+
+  <script src="/node_modules/jszip/dist/jszip.min.js"></script>
+  <script src="app.js" type="module"></script>
+</body>
+</html>

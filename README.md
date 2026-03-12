@@ -25,7 +25,7 @@ npm run build
 
 - このリポジトリが FFMPEGGER の対応ソース一式です。
 - `dist/` には、アプリ本体のソース、依存パッケージの実行に必要なファイル、`package.json`、`package-lock.json`、`build.js`、`server.js`、`LICENSE`、`THIRD_PARTY_NOTICES.txt` を含めています。
-- 公開ビルドでは `@ffmpeg/core` を CDN ではなく同梱ファイルから読み込みます。配布物だけを受け取った利用者でも、同じ場所からライセンス文書と再現情報を確認できます。
+- 公開ビルドでは `@ffmpeg/core` は CDN から読み込み、`@ffmpeg/ffmpeg` と `@ffmpeg/util` と `jszip` は `dist/` に同梱します。Cloudflare Pages の 25 MiB 制限に収めるためです。
 
 ## License
 

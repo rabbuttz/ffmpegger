@@ -30,9 +30,8 @@ cpSync("src", `${DIST}/src`, { recursive: true });
 
 cpSync("index.html", `${DIST}/index.html`);
 
-// Copy runtime dependencies and their preferred source form into vendor/.
+// Copy runtime dependencies to vendor/ (@ffmpeg/core stays on CDN to avoid Pages' 25 MiB file limit).
 const deps = [
-  ["node_modules/@ffmpeg/core/dist/esm",    "vendor/@ffmpeg/core/dist/esm"],
   ["node_modules/@ffmpeg/ffmpeg/dist/esm", "vendor/@ffmpeg/ffmpeg/dist/esm"],
   ["node_modules/@ffmpeg/util/dist/esm",   "vendor/@ffmpeg/util/dist/esm"],
   ["node_modules/jszip/dist",              "vendor/jszip/dist"],

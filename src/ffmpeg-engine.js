@@ -19,6 +19,16 @@ function buildTrimArgs(settings) {
   return { postInputArgs, preInputArgs };
 }
 
+function appendAudioQuality(args, acodec, quality) {
+  // libvorbis の CBR (-b:a) は低サンプルレート入力で encoder setup に失敗するため、
+  // サンプルレートに追従する品質指定 (-q:a) を使う。
+  if (acodec === "libvorbis") {
+    args.push("-q:a", quality.vorbisQ);
+  } else if (!["pcm_s16le", "flac"].includes(acodec)) {
+    args.push("-b:a", quality.ab);
+  }
+}
+
 function buildArgs(settings, inputName, outputName) {
   const fmt = settings.format;
   const isAudio = AUDIO_FORMATS.has(fmt);
@@ -38,9 +48,7 @@ function buildArgs(settings, inputName, outputName) {
     args.push("-vn");
     if (acodec) {
       args.push("-c:a", acodec);
-      if (!["pcm_s16le", "flac"].includes(acodec)) {
-        args.push("-b:a", quality.ab);
-      }
+      appendAudioQuality(args, acodec, quality);
     }
   } else {
     const vcodec = settings.videoCodec !== "auto" ? settings.videoCodec : defaults.vcodec;
@@ -49,7 +57,7 @@ function buildArgs(settings, inputName, outputName) {
     if (vcodec) args.push("-c:v", vcodec, "-crf", quality.crf);
     if (acodec) {
       args.push("-c:a", acodec);
-      if (acodec !== "pcm_s16le") args.push("-b:a", quality.ab);
+      appendAudioQuality(args, acodec, quality);
     }
     if (settings.resolution !== "original") {
       args.push("-vf", `scale=${settings.resolution}`);

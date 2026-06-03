@@ -52,9 +52,9 @@ export const FORMAT_CODEC_COMPAT = {
 };
 
 export const QUALITY_MAP = {
-  high: { crf: "18", ab: "256k" },
-  medium: { crf: "23", ab: "192k" },
-  low: { crf: "30", ab: "128k" },
+  high: { crf: "18", ab: "256k", vorbisQ: "7" },
+  medium: { crf: "23", ab: "192k", vorbisQ: "6" },
+  low: { crf: "30", ab: "128k", vorbisQ: "4" },
 };
 
 export const CODEC_LABELS = {
